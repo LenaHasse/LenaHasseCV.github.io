@@ -45,6 +45,11 @@
       cursor: pointer;
     }
 
+    .print-btn:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
     .cv {
       max-width: 900px;
       margin: 0 auto;
@@ -170,7 +175,7 @@
 </head>
 <body>
   <div class="actions">
-    <button class="print-btn" type="button" onclick="window.print()">Zapisz jako PDF</button>
+    <button id="downloadPdfBtn" class="print-btn" type="button">Pobierz PDF</button>
   </div>
 
   <div class="cv">
@@ -272,7 +277,7 @@
       <div class="entry">
         <div class="entry-head">
           <h3>Fundacja Kotella (wolontariat)</h3>
-          <span class="date">01.2025 - obecnie </span>
+          <span class="date">01.2025</span>
         </div>
         <ul>
           <li>Udział w akcjach ratunkowych (łapanie i zabezpieczanie kotów).</li>
@@ -342,5 +347,78 @@
       </ul>
     </section>
   </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    const downloadPdfBtn = document.getElementById("downloadPdfBtn");
+    const cvElement = document.querySelector(".cv");
+
+    async function downloadPdf() {
+      if (!cvElement || !window.jspdf || !window.html2canvas) return;
+
+      const originalLabel = downloadPdfBtn.textContent;
+      downloadPdfBtn.disabled = true;
+      downloadPdfBtn.textContent = "Generowanie PDF...";
+
+      try {
+        const canvas = await window.html2canvas(cvElement, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff"
+        });
+
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF("p", "mm", "a4");
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 8;
+        const renderWidth = pageWidth - margin * 2;
+        const renderHeight = (canvas.height * renderWidth) / canvas.width;
+
+        let remainingHeight = renderHeight;
+        let yOffset = margin;
+        let sourceY = 0;
+        const pagePixelHeight = (canvas.width * (pageHeight - margin * 2)) / renderWidth;
+
+        while (remainingHeight > 0) {
+          const pageCanvas = document.createElement("canvas");
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = Math.min(pagePixelHeight, canvas.height - sourceY);
+          const ctx = pageCanvas.getContext("2d");
+          ctx.drawImage(
+            canvas,
+            0,
+            sourceY,
+            canvas.width,
+            pageCanvas.height,
+            0,
+            0,
+            canvas.width,
+            pageCanvas.height
+          );
+
+          const pageImgData = pageCanvas.toDataURL("image/jpeg", 0.95);
+          const pageImgHeight = (pageCanvas.height * renderWidth) / canvas.width;
+          pdf.addImage(pageImgData, "JPEG", margin, yOffset, renderWidth, pageImgHeight);
+
+          remainingHeight -= pageImgHeight;
+          sourceY += pageCanvas.height;
+
+          if (remainingHeight > 0) {
+            pdf.addPage();
+          }
+        }
+
+        pdf.save("Lena_Hasse_CV.pdf");
+      } finally {
+        downloadPdfBtn.disabled = false;
+        downloadPdfBtn.textContent = originalLabel;
+      }
+    }
+
+    downloadPdfBtn.addEventListener("click", downloadPdf);
+  </script>
 </body>
 </html>
