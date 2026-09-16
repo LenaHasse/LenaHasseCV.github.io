@@ -359,3 +359,23 @@ section.reveal.in-view {
     display: none !important;
   }
 }
+
+.entry {
+  display: block;
+  margin: 20px 0;
+  background: var(--item-bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.entry-head h3 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--text);
+}
+
+.entry-head .date {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
